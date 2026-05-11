@@ -14,6 +14,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	waTypes "go.mau.fi/whatsmeow/types"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -152,5 +153,7 @@ func RevokeWhatsAppMessage(waChatID, waMessageID string) error {
 }
 
 func RecordTimelineMessage(msg database.MiniAppTimelineMessage) {
-	_, _ = database.MiniAppTimelineAdd(&msg)
+	if _, err := database.MiniAppTimelineAdd(&msg); err != nil {
+		state.State.Logger.Warn("failed to persist mini app timeline message", zap.Error(err))
+	}
 }

@@ -115,7 +115,7 @@ func (s *server) routes() {
 	fileServer := http.FileServer(http.FS(sub))
 	s.mux.Handle("/miniapp/", http.StripPrefix("/miniapp/", fileServer))
 	s.mux.HandleFunc("/miniapp", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/miniapp/", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/miniapp/", http.StatusPermanentRedirect)
 	})
 }
 
@@ -143,7 +143,15 @@ func (s *server) withRateLimit(next http.HandlerFunc) http.HandlerFunc {
 		s.mu.Unlock()
 
 		if current.Count > maxPerMinute {
-			writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "rate limit exceeded"})
+			retryAfter := int64(current.ResetAt.Sub(now).Seconds())
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			w.Header().Set("Retry-After", strconv.FormatInt(retryAfter, 10))
+			writeJSON(w, http.StatusTooManyRequests, map[string]any{
+				"error":       "rate limit exceeded",
+				"retry_after": retryAfter,
+			})
 			return
 		}
 		next(w, r)

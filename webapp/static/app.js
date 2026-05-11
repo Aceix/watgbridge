@@ -6,10 +6,11 @@ const MESSAGE_PAGE_LIMIT = 50;
 const UPDATE_PAGE_LIMIT = 100;
 
 const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
+if (!tg) {
+  throw new Error("Open this Mini App from Telegram.");
 }
+tg.ready();
+tg.expand();
 
 async function api(path, options = {}) {
   const headers = options.headers || {};
@@ -125,5 +126,11 @@ async function boot() {
 }
 
 boot().catch((err) => {
-  alert(err.message);
+  const box = document.createElement("div");
+  box.style.background = "#da3633";
+  box.style.padding = "10px";
+  box.style.margin = "10px";
+  box.style.borderRadius = "8px";
+  box.textContent = err.message;
+  document.body.prepend(box);
 });
