@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	"watgbridge/state"
 )
@@ -41,6 +42,24 @@ type ChatEphemeralSettings struct {
 	EphemeralTimer uint32
 }
 
+type MiniAppTimelineMessage struct {
+	ID uint64 `gorm:"primaryKey;autoIncrement"`
+
+	WaChatID          string `gorm:"index;not null"`
+	WaMessageID       string `gorm:"index"`
+	ReplyToWaMessageID string
+	SenderJID         string
+	SenderName        string
+	Direction         string
+	Source            string
+	Text              string `gorm:"type:text"`
+	MediaType         string
+	MediaName         string
+	Status            string
+	ErrorMessage      string `gorm:"type:text"`
+	CreatedAt         time.Time `gorm:"index"`
+}
+
 func AutoMigrate() error {
 	db := state.State.Database
 	return db.AutoMigrate(
@@ -48,5 +67,6 @@ func AutoMigrate() error {
 		&ChatThreadPair{},
 		&ContactName{},
 		&ChatEphemeralSettings{},
+		&MiniAppTimelineMessage{},
 	)
 }

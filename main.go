@@ -14,6 +14,7 @@ import (
 	"watgbridge/state"
 	"watgbridge/telegram"
 	"watgbridge/utils"
+	"watgbridge/webapp"
 	"watgbridge/whatsapp"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -201,6 +202,13 @@ func main() {
 	state.State.WhatsAppClient.AddEventHandler(whatsapp.WhatsAppEventHandler)
 	telegram.AddTelegramHandlers()
 	modules.LoadModuleHandlers()
+
+	err = webapp.StartServer()
+	if err != nil {
+		logger.Fatal("failed to initialize mini app server",
+			zap.Error(err),
+		)
+	}
 
 	if !cfg.Telegram.SkipSettingCommands {
 		err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)

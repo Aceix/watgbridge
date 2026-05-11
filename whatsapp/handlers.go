@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"watgbridge/bridge"
 	"watgbridge/database"
 	"watgbridge/state"
 	"watgbridge/utils"
@@ -150,6 +151,20 @@ func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {
 		}
 	}
 
+	mediaType, normalizedText := waNormalizeMessage(v.Message, text)
+	bridge.RecordTimelineMessage(database.MiniAppTimelineMessage{
+		WaChatID:           v.Info.Chat.ToNonAD().String(),
+		WaMessageID:        msgId,
+		ReplyToWaMessageID: waReplyToMessageID(v.Message),
+		SenderJID:          v.Info.MessageSource.Sender.ToNonAD().String(),
+		SenderName:         "You",
+		Direction:          "out",
+		Source:             "whatsapp",
+		Text:               normalizedText,
+		MediaType:          mediaType,
+		Status:             "sent",
+	})
+
 	if state.State.Config.WhatsApp.SendMyMessagesFromOtherDevices {
 		MessageFromOthersEventHandler(text, v, isEdited)
 	}
@@ -200,6 +215,20 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		)
 		return
 	}
+
+	mediaType, normalizedText := waNormalizeMessage(v.Message, text)
+	bridge.RecordTimelineMessage(database.MiniAppTimelineMessage{
+		WaChatID:           v.Info.Chat.ToNonAD().String(),
+		WaMessageID:        msgId,
+		ReplyToWaMessageID: waReplyToMessageID(v.Message),
+		SenderJID:          v.Info.MessageSource.Sender.ToNonAD().String(),
+		SenderName:         utils.WaGetContactName(v.Info.MessageSource.Sender),
+		Direction:          "in",
+		Source:             "whatsapp",
+		Text:               normalizedText,
+		MediaType:          mediaType,
+		Status:             "received",
+	})
 
 	replyMarkup := utils.TgBuildUrlButton(utils.WaGetContactName(v.Info.Sender), fmt.Sprintf("https://wa.me/%s", v.Info.MessageSource.Sender.ToNonAD().User))
 	if !isEdited {
@@ -1287,6 +1316,50 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		}
 		return
 	}
+}
+
+func waReplyToMessageID(msg *waE2E.Message) string {
+	if msg.GetExtendedTextMessage() != nil &&
+		msg.GetExtendedTextMessage().GetContextInfo() != nil &&
+		msg.GetExtendedTextMessage().GetContextInfo().GetStanzaID() != "" {
+		return msg.GetExtendedTextMessage().GetContextInfo().GetStanzaID()
+	}
+
+	if msg.GetImageMessage() != nil &&
+		msg.GetImageMessage().GetContextInfo() != nil &&
+		msg.GetImageMessage().GetContextInfo().GetStanzaID() != "" {
+		return msg.GetImageMessage().GetContextInfo().GetStanzaID()
+	}
+
+	if msg.GetDocumentMessage() != nil &&
+		msg.GetDocumentMessage().GetContextInfo() != nil &&
+		msg.GetDocumentMessage().GetContextInfo().GetStanzaID() != "" {
+		return msg.GetDocumentMessage().GetContextInfo().GetStanzaID()
+	}
+
+	return ""
+}
+
+func waNormalizeMessage(msg *waE2E.Message, fallbackText string) (string, string) {
+	if fallbackText != "" {
+		return "text", fallbackText
+	}
+	if m := msg.GetImageMessage(); m != nil {
+		return "image", m.GetCaption()
+	}
+	if m := msg.GetVideoMessage(); m != nil {
+		return "video", m.GetCaption()
+	}
+	if m := msg.GetDocumentMessage(); m != nil {
+		return "document", m.GetCaption()
+	}
+	if m := msg.GetAudioMessage(); m != nil {
+		return "audio", m.GetCaption()
+	}
+	if msg.GetStickerMessage() != nil {
+		return "sticker", "[sticker]"
+	}
+	return "unknown", ""
 }
 
 func UndecryptableMessageEventHandler(v *events.UndecryptableMessage) {

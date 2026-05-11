@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"time"
 
 	"watgbridge/state"
 
@@ -192,6 +193,12 @@ func ChatThreadDropAllPairs() error {
 	db := state.State.Database
 	res := db.Where("1 = 1").Delete(&ChatThreadPair{})
 
+	return res.Error
+}
+
+func ChatThreadDropPairByWa(waChatID string, tgChatID int64) error {
+	db := state.State.Database
+	res := db.Where("id = ? AND tg_chat_id = ?", waChatID, tgChatID).Delete(&ChatThreadPair{})
 	return res.Error
 }
 
@@ -390,4 +397,73 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	}
 
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
+}
+
+func MiniAppTimelineAdd(msg *MiniAppTimelineMessage) (uint64, error) {
+	db := state.State.Database
+	msg.CreatedAt = time.Now().UTC()
+	res := db.Create(msg)
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	return msg.ID, nil
+}
+
+func MiniAppTimelineListByChat(waChatID string, limit int, beforeID uint64) ([]MiniAppTimelineMessage, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+
+	db := state.State.Database
+	var items []MiniAppTimelineMessage
+	query := db.Where("wa_chat_id = ?", waChatID)
+	if beforeID > 0 {
+		query = query.Where("id < ?", beforeID)
+	}
+	res := query.Order("id desc").Limit(limit).Find(&items)
+	return items, res.Error
+}
+
+func MiniAppTimelineListSince(sinceID uint64, limit int) ([]MiniAppTimelineMessage, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 100
+	}
+
+	db := state.State.Database
+	var items []MiniAppTimelineMessage
+	res := db.Where("id > ?", sinceID).Order("id asc").Limit(limit).Find(&items)
+	return items, res.Error
+}
+
+func MiniAppTimelineLatestID() (uint64, error) {
+	db := state.State.Database
+	var item MiniAppTimelineMessage
+	res := db.Order("id desc").Limit(1).Find(&item)
+	return item.ID, res.Error
+}
+
+func MiniAppTimelineGetByWaMessage(waChatID, waMessageID string) (*MiniAppTimelineMessage, error) {
+	db := state.State.Database
+	var item MiniAppTimelineMessage
+	res := db.Where("wa_chat_id = ? AND wa_message_id = ?", waChatID, waMessageID).Order("id desc").Limit(1).Find(&item)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if item.ID == 0 {
+		return nil, nil
+	}
+	return &item, nil
+}
+
+func MiniAppTimelineLatestByChat(waChatID string) (*MiniAppTimelineMessage, error) {
+	db := state.State.Database
+	var item MiniAppTimelineMessage
+	res := db.Where("wa_chat_id = ?", waChatID).Order("id desc").Limit(1).Find(&item)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	if item.ID == 0 {
+		return nil, nil
+	}
+	return &item, nil
 }
