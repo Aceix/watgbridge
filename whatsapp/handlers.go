@@ -1354,7 +1354,7 @@ func waNormalizeMessage(msg *waE2E.Message, fallbackText string) (string, string
 		return "document", m.GetCaption()
 	}
 	if m := msg.GetAudioMessage(); m != nil {
-		return "audio", m.GetCaption()
+		return "audio", "[audio]"
 	}
 	if msg.GetStickerMessage() != nil {
 		return "sticker", "[sticker]"

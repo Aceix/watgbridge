@@ -259,10 +259,10 @@ func (s *server) handleChatsList(w http.ResponseWriter, r *http.Request, _ sessi
 	}
 
 	type chatItem struct {
-		WaChatID     string `json:"wa_chat_id"`
-		Name         string `json:"name"`
-		ThreadID     int64  `json:"thread_id"`
-		LastMessage  string `json:"last_message"`
+		WaChatID      string `json:"wa_chat_id"`
+		Name          string `json:"name"`
+		ThreadID      int64  `json:"thread_id"`
+		LastMessage   string `json:"last_message"`
 		LastMessageID uint64 `json:"last_message_id"`
 	}
 
@@ -358,8 +358,8 @@ func (s *server) handleMessageSend(w http.ResponseWriter, r *http.Request, sess 
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status": status,
-		"message_id": sendRes.ID,
+		"status":        status,
+		"message_id":    sendRes.ID,
 		"error_message": errMsg,
 	})
 }
