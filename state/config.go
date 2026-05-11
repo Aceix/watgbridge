@@ -73,6 +73,16 @@ type Config struct {
 	} `yaml:"whatsapp"`
 
 	Database map[string]string `yaml:"database"`
+
+	MiniApp struct {
+		Enabled            bool   `yaml:"enabled"`
+		PublicURL          string `yaml:"public_url"`
+		BindAddress        string `yaml:"bind_address"`
+		SessionTTLSeconds  int64  `yaml:"session_ttl_seconds"`
+		InitDataTTLSeconds int64  `yaml:"init_data_ttl_seconds"`
+		RateLimitPerMinute int64  `yaml:"rate_limit_per_minute"`
+		RequireHTTPS       bool   `yaml:"require_https"`
+	} `yaml:"mini_app"`
 }
 
 func (cfg *Config) LoadConfig() error {
@@ -151,4 +161,11 @@ func (cfg *Config) SetDefaults() {
 	cfg.WhatsApp.StickerMetadata.AuthorName = "WaTgBridge"
 
 	cfg.Telegram.ConfirmationType = "emoji"
+
+	cfg.MiniApp.Enabled = false
+	cfg.MiniApp.BindAddress = "127.0.0.1:8090"
+	cfg.MiniApp.SessionTTLSeconds = 3600
+	cfg.MiniApp.InitDataTTLSeconds = 300
+	cfg.MiniApp.RateLimitPerMinute = 120
+	cfg.MiniApp.RequireHTTPS = true
 }
