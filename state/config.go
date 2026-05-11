@@ -81,6 +81,7 @@ type Config struct {
 		SessionTTLSeconds  int64  `yaml:"session_ttl_seconds"`
 		InitDataTTLSeconds int64  `yaml:"init_data_ttl_seconds"`
 		RateLimitPerMinute int64  `yaml:"rate_limit_per_minute"`
+		MaxUploadBytes     int64  `yaml:"max_upload_bytes"`
 		RequireHTTPS       bool   `yaml:"require_https"`
 	} `yaml:"mini_app"`
 }
@@ -167,5 +168,6 @@ func (cfg *Config) SetDefaults() {
 	cfg.MiniApp.SessionTTLSeconds = 3600
 	cfg.MiniApp.InitDataTTLSeconds = 300
 	cfg.MiniApp.RateLimitPerMinute = 120
+	cfg.MiniApp.MaxUploadBytes = 30 * 1024 * 1024
 	cfg.MiniApp.RequireHTTPS = true
 }

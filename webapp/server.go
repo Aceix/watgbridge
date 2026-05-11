@@ -3,6 +3,7 @@ package webapp
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"embed"
 	"encoding/hex"
@@ -75,6 +76,9 @@ func StartServer() error {
 	httpServer := &http.Server{
 		Addr:              cfg.MiniApp.BindAddress,
 		Handler:           s.mux,
+		ReadTimeout:       20 * time.Second,
+		WriteTimeout:      20 * time.Second,
+		IdleTimeout:       60 * time.Second,
 		ReadHeaderTimeout: 15 * time.Second,
 	}
 
@@ -370,7 +374,13 @@ func (s *server) handleMessageUpload(w http.ResponseWriter, r *http.Request, ses
 		return
 	}
 
-	if err := r.ParseMultipartForm(30 << 20); err != nil {
+	maxUploadBytes := state.State.Config.MiniApp.MaxUploadBytes
+	if maxUploadBytes <= 0 {
+		maxUploadBytes = 30 * 1024 * 1024
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+
+	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "failed to parse multipart body"})
 		return
 	}
@@ -629,7 +639,11 @@ func validateTelegramInitData(initData string) (int64, string, error) {
 }
 
 func randomToken(userID int64, suffix string) string {
-	payload := fmt.Sprintf("%d|%s|%d", userID, suffix, time.Now().UTC().UnixNano())
+	nonce := make([]byte, 32)
+	if _, err := rand.Read(nonce); err != nil {
+		nonce = []byte(fmt.Sprintf("%d", time.Now().UTC().UnixNano()))
+	}
+	payload := fmt.Sprintf("%d|%s|%d|%s", userID, suffix, time.Now().UTC().UnixNano(), hex.EncodeToString(nonce))
 	sum := sha256.Sum256([]byte(payload))
 	return hex.EncodeToString(sum[:])
 }

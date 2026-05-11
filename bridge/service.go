@@ -3,9 +3,9 @@ package bridge
 import (
 	"context"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"strings"
-	"time"
 
 	"watgbridge/database"
 	"watgbridge/state"
@@ -70,12 +70,10 @@ func SendMediaToWhatsApp(waChatID, caption, replyToWaMessageID string, file mult
 		return whatsmeow.SendResponse{}, fmt.Errorf("invalid WhatsApp chat ID")
 	}
 
-	fileBytes := make([]byte, fileHeader.Size)
-	readSize, err := file.Read(fileBytes)
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		return whatsmeow.SendResponse{}, err
 	}
-	fileBytes = fileBytes[:readSize]
 
 	var mediaType whatsmeow.MediaType
 	if strings.HasPrefix(mimeType, "image/") {
@@ -154,6 +152,5 @@ func RevokeWhatsAppMessage(waChatID, waMessageID string) error {
 }
 
 func RecordTimelineMessage(msg database.MiniAppTimelineMessage) {
-	msg.CreatedAt = time.Now().UTC()
 	_, _ = database.MiniAppTimelineAdd(&msg)
 }

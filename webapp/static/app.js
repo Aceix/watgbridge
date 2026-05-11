@@ -2,6 +2,8 @@ let token = "";
 let csrfToken = "";
 let currentChatId = "";
 let latestID = 0;
+const MESSAGE_PAGE_LIMIT = 50;
+const UPDATE_PAGE_LIMIT = 100;
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
@@ -54,7 +56,7 @@ async function loadChats() {
 
 async function loadMessages() {
   if (!currentChatId) return;
-  const data = await api(`/miniapp/api/messages?chat_id=${encodeURIComponent(currentChatId)}&limit=50`);
+  const data = await api(`/miniapp/api/messages?chat_id=${encodeURIComponent(currentChatId)}&limit=${MESSAGE_PAGE_LIMIT}`);
   const list = document.getElementById("messageList");
   list.innerHTML = "";
   const messages = [...data.messages].reverse();
@@ -103,7 +105,7 @@ async function uploadMedia(event) {
 
 async function pollUpdates() {
   if (!currentChatId || !latestID) return;
-  const data = await api(`/miniapp/api/updates?since=${latestID}&limit=100`);
+  const data = await api(`/miniapp/api/updates?since=${latestID}&limit=${UPDATE_PAGE_LIMIT}`);
   latestID = data.latest_id || latestID;
   if ((data.messages || []).some((m) => m.wa_chat_id === currentChatId)) {
     await loadMessages();
