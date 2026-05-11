@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"watgbridge/bridge"
 	"watgbridge/database"
 	"watgbridge/state"
 	"watgbridge/utils"
@@ -106,6 +107,10 @@ func AddTelegramHandlers() {
 		waTgBridgeCommand{
 			handlers.NewCommand("send", SendToWhatsAppHandler),
 			"Send a message to WhatsApp",
+		},
+		waTgBridgeCommand{
+			handlers.NewCommand("miniapp", OpenMiniAppHandler),
+			"Open the Telegram Mini App interface",
 		},
 		waTgBridgeCommand{
 			handlers.NewCommand("help", HelpCommandHandler),
@@ -746,6 +751,39 @@ func HelpCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
 	return err
 }
 
+func OpenMiniAppHandler(b *gotgbot.Bot, c *ext.Context) error {
+	if !utils.TgUpdateIsAuthorized(b, c) {
+		return nil
+	}
+
+	cfg := state.State.Config
+	if !cfg.MiniApp.Enabled {
+		_, err := utils.TgReplyTextByContext(b, c, "Mini App is disabled in config", nil, false)
+		return err
+	}
+	if cfg.MiniApp.PublicURL == "" {
+		_, err := utils.TgReplyTextByContext(b, c, "mini_app.public_url is empty in config", nil, false)
+		return err
+	}
+
+	_, err := b.SendMessage(c.EffectiveChat.Id, "Open Mini App", &gotgbot.SendMessageOpts{
+		MessageThreadId: c.EffectiveMessage.MessageThreadId,
+		ReplyMarkup: gotgbot.InlineKeyboardMarkup{
+			InlineKeyboard: [][]gotgbot.InlineKeyboardButton{
+				{
+					{
+						Text: "Open Mini App",
+						WebApp: &gotgbot.WebAppInfo{
+							Url: cfg.MiniApp.PublicURL,
+						},
+					},
+				},
+			},
+		},
+	})
+	return err
+}
+
 func SendToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 	if !utils.TgUpdateIsAuthorized(b, c) {
 		return nil
@@ -790,7 +828,6 @@ func RevokeCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	var (
-		waClient    = state.State.WhatsAppClient
 		msgToRevoke = c.EffectiveMessage.ReplyToMessage
 		chatId      = c.EffectiveChat.Id
 	)
@@ -801,8 +838,7 @@ func RevokeCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	chatJid, _ := utils.WaParseJID(waChatId)
-	revokeMessage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, waMsgId)
-	_, err = waClient.SendMessage(context.Background(), chatJid, revokeMessage)
+	err = bridge.RevokeWhatsAppMessage(chatJid.String(), waMsgId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "failed to revoke message", err)
 	}
@@ -817,9 +853,8 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	var (
-		waClient = state.State.WhatsAppClient
-		cq       = c.CallbackQuery
-		data     = strings.Split(cq.Data, "_")
+		cq   = c.CallbackQuery
+		data = strings.Split(cq.Data, "_")
 	)
 
 	if len(data) == 3 {
@@ -856,8 +891,7 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 		} else if confirmation == "y" {
 
 			chatJid, _ := utils.WaParseJID(data[2])
-			revokeMesssage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, data[1])
-			_, err := waClient.SendMessage(context.Background(), chatJid, revokeMesssage)
+			err := bridge.RevokeWhatsAppMessage(chatJid.String(), data[1])
 			if err != nil {
 				_, err = cq.Answer(b, &gotgbot.AnswerCallbackQueryOpts{
 					Text:      "Failed to send revoke message : " + err.Error(),

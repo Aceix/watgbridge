@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WaTgBridge Mini App</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>WaTgBridge</h1>
+    <button id="refreshBtn">Refresh</button>
+  </header>
+
+  <main>
+    <section class="panel chats">
+      <h2>Chats</h2>
+      <ul id="chatList"></ul>
+    </section>
+    <section class="panel messages">
+      <h2 id="chatTitle">Messages</h2>
+      <div id="messageList"></div>
+      <form id="sendForm">
+        <input id="messageInput" type="text" placeholder="Type message..." required />
+        <button type="submit">Send</button>
+      </form>
+      <form id="uploadForm">
+        <input id="fileInput" type="file" />
+        <input id="captionInput" type="text" placeholder="Caption" />
+        <button type="submit">Upload</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

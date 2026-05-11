@@ -36,6 +36,20 @@ This project is in no way affiliated with WhatsApp or Telegram. Using this can a
 - Video stickers from Telegram side are supported
 - Video stickers from WhatsApp side are currently forwarded as GIFs to Telegram
 
+## Telegram Mini App (Experimental)
+
+WaTgBridge now includes an optional Telegram Mini App interface.
+
+- Enable it from `mini_app.enabled: true` in config.
+- Set `mini_app.public_url` to the HTTPS URL where users will open the app.
+- Set `mini_app.bind_address` for the internal HTTP server bind target.
+- Use `/miniapp` in Telegram to open the Mini App.
+
+Security controls:
+- Telegram WebApp `initData` validation is enforced on login.
+- Only owner + sudo users can access Mini App APIs.
+- Session expiry, CSRF checks, and API rate limiting are enabled.
+
 ## Bugs and TODO
 
 - Document naming is messed up and not consistent on Telegram, have to find a way to always send same names

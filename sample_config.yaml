@@ -9,6 +9,16 @@ debug_mode: false
 use_github_binaries: false              # Set to true if you want to use pre-built binaries from GitHub
 architecture:                           # Set it to aarch64 or amd64 based on your machine architecture to update using prebuilt releases
 
+mini_app:
+  enabled: false
+  public_url: https://example.com/miniapp
+  bind_address: 127.0.0.1:8090
+  session_ttl_seconds: 3600
+  init_data_ttl_seconds: 300
+  rate_limit_per_minute: 120
+  max_upload_bytes: 31457280
+  require_https: true
+
 telegram:
   bot_token: 186779
   #api_url: http://localhost:8082        # Uncomment if you have a local bot API server running (for bypassing file size limits)
